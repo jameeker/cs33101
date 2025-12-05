@@ -894,6 +894,22 @@ def test_evaluate_builtins():
     equals('keys({"a":1,"b":2})', {}, ["a", "b"])
     equals('keys({})', {}, [])
 
+    # test push to list
+    env = {"mylist": [1, 2]} # This is needed because push() is a mutator
+    equals("push(mylist, 3)", env, [1, 2, 3], {"mylist": [1, 2, 3]})
+
+    # test pop from list
+    env = {"mylist": [1, 2, 3]} # This is needed because pop() is a mutator
+    equals("pop(mylist)", env, 3, {"mylist": [1, 2]})
+
+    # type checking
+    equals("type(42)", {}, "number")
+    equals('type("hello")', {}, "string")
+    equals("type(true)", {}, "boolean")
+    equals("type([1,2])", {}, "array")
+    equals('type({"a":1})', {}, "object")
+    equals("type(null)", {}, "null")
+
     # input (mocking is tricky here, this just tests if it's recognized)
     # For a real test, you'd need to mock Python's input()
     # equals("input()", {}, "test_input_value") # This would require mocking
