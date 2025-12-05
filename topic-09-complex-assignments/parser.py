@@ -224,11 +224,11 @@ def test_parse_list():
     assert ast == {"items": [], "tag": "list"}
 
     ast = parse(tokenize(
-        """
-        function double(x) { return x+x };
-        y = [1,2,3,double(4)]
-        """))
-    assert ast == {'tag': 'program', 'statements': [{'tag': 'assign', 'target': {'tag': 'identifier', 'value': 'double'}, 'value': {'tag': 'function', 'parameters': [{'tag': 'identifier', 'value': 'x', 'position': 25}], 'body': {'tag': 'statement_list', 'statements': [{'tag': 'return', 'value': {'tag': '+', 'left': {'tag': 'identifier', 'value': 'x'}, 'right': {'tag': 'identifier', 'value': 'x'}}}]}}}, {'tag': 'assign', 'target': {'tag': 'identifier', 'value': 'y'}, 'value': {'tag': 'list', 'items': [{'tag': 'number', 'value': 1}, {'tag': 'number', 'value': 2}, {'tag': 'number', 'value': 3}, {'tag': 'call', 'function': {'tag': 'identifier', 'value': 'double'}, 'arguments': [{'tag': 'number', 'value': 4}]}]}}]}
+"""
+function double(x) { return x+x };
+y = [1,2,3,double(4)]
+"""))
+    assert ast == {'tag': 'program', 'statements': [{'tag': 'assign', 'target': {'tag': 'identifier', 'value': 'double'}, 'value': {'tag': 'function', 'parameters': [{'tag': 'identifier', 'position': 17, 'value': 'x'}], 'body': {'tag': 'statement_list', 'statements': [{'tag': 'return', 'value': {'tag': '+', 'left': {'tag': 'identifier', 'value': 'x'}, 'right': {'tag': 'identifier', 'value': 'x'}}}]}}, 'position': 'unknown'}, {'tag': 'assign', 'target': {'tag': 'identifier', 'value': 'y'}, 'value': {'tag': 'list', 'items': [{'tag': 'number', 'value': 1}, {'tag': 'number', 'value': 2}, {'tag': 'number', 'value': 3}, {'tag': 'call', 'function': {'tag': 'identifier', 'value': 'double'}, 'arguments': [{'tag': 'number', 'value': 4}]}]}, 'position': 38}]}
 
 
 def parse_object(tokens):
@@ -418,6 +418,7 @@ def test_parse_function():
                 "tag": "assign",
                 "target": {"tag": "identifier", "value": "x"},
                 "value": {"tag": "number", "value": 3},
+                "position": 11,
             },
             {
                 "tag": "assign",
@@ -432,6 +433,7 @@ def test_parse_function():
                         ],
                     },
                 },
+                "position": "unknown",
             },
             {
                 "tag": "call",
@@ -989,9 +991,9 @@ def test_parse_statement_list():
     ast, tokens = parse_statement_list(tokenize("{print 2;if (x) {4} print 3}"))
     assert ast == {'tag': 'statement_list', 'statements': [{'tag': 'print', 'value': {'tag': 'number', 'value': 2}}, {'tag': 'if', 'condition': {'tag': 'identifier', 'value': 'x'}, 'then': {'tag': 'statement_list', 'statements': [{'tag': 'number', 'value': 4}]}}, {'tag': 'print', 'value': {'tag': 'number', 'value': 3}}]}
     ast, tokens = parse_statement_list(tokenize("{print 2;function z(x) {4} print 3;}"))
-    assert ast == {'tag': 'statement_list', 'statements': [{'tag': 'print', 'value': {'tag': 'number', 'value': 2}}, {'tag': 'assign', 'target': {'tag': 'identifier', 'value': 'z'}, 'value': {'tag': 'function', 'parameters': [{'tag': 'identifier', 'value': 'x', 'position': 20}], 'body': {'tag': 'statement_list', 'statements': [{'tag': 'number', 'value': 4}]}}}, {'tag': 'print', 'value': {'tag': 'number', 'value': 3}}]}
+    assert ast == {'tag': 'statement_list', 'statements': [{'tag': 'print', 'value': {'tag': 'number', 'value': 2}}, {'tag': 'assign', 'target': {'tag': 'identifier', 'value': 'z'}, 'value': {'tag': 'function', 'parameters': [{'tag': 'identifier', 'value': 'x', 'position': 20}], 'body': {'tag': 'statement_list', 'statements': [{'tag': 'number', 'value': 4}]}}, 'position': 'unknown'}, {'tag': 'print', 'value': {'tag': 'number', 'value': 3}}]}
     ast, tokens = parse_statement_list(tokenize("{print 2;z = function (x) {4} print 3;}"))
-    assert ast == {'tag': 'statement_list', 'statements': [{'tag': 'print', 'value': {'tag': 'number', 'value': 2}}, {'tag': 'assign', 'target': {'tag': 'identifier', 'value': 'z'}, 'value': {'tag': 'function', 'parameters': [{'tag': 'identifier', 'value': 'x', 'position': 23}], 'body': {'tag': 'statement_list', 'statements': [{'tag': 'number', 'value': 4}]}}}, {'tag': 'print', 'value': {'tag': 'number', 'value': 3}}]}
+    assert ast == {'tag': 'statement_list', 'statements': [{'tag': 'print', 'value': {'tag': 'number', 'value': 2}}, {'tag': 'assign', 'target': {'tag': 'identifier', 'value': 'z'}, 'value': {'tag': 'function', 'parameters': [{'tag': 'identifier', 'value': 'x', 'position': 23}], 'body': {'tag': 'statement_list', 'statements': [{'tag': 'number', 'value': 4}]}}, 'position': 11}, {'tag': 'print', 'value': {'tag': 'number', 'value': 3}}]}
 
 
 def parse_if_statement(tokens):
@@ -1278,6 +1280,7 @@ def test_parse_function_statement():
             "parameters": [{"position": 11, "tag": "identifier", "value": "y"}],
             "tag": "function",
         },
+        "position": "unknown",
     }
 
 
