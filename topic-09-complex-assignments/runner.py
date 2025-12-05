@@ -21,14 +21,14 @@ def main():
             source_file = arg
     
     # Check for command line arguments
-    if len(sys.argv) > 1:
+    if source_file:
         # Filename provided, read and execute it
-        with open(sys.argv[1], 'r') as f:
+        with open(source_file, 'r') as f:
             source_code = f.read()
         try:
             tokens = tokenize(source_code)
             ast = parse(tokens)
-            final_value, exit_status = evaluate(ast, environment)
+            final_value, exit_status = evaluate(ast, environment, debug_config)
             if exit_status == "exit":
                 # print(f"Exiting with code: {final_value}") # Optional debug print
                 sys.exit(final_value if isinstance(final_value, int) else 0)
@@ -49,7 +49,7 @@ def main():
                 # Tokenize, parse, and execute the code
                 tokens = tokenize(source_code)
                 ast = parse(tokens)
-                final_value, exit_status = evaluate(ast, environment)
+                final_value, exit_status = evaluate(ast, environment, debug_config)
                 if exit_status == "exit":
                     print(f"Exiting with code: {final_value}") # REPL can print this
                     sys.exit(final_value if isinstance(final_value, int) else 0)
