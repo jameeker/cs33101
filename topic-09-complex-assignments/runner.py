@@ -10,6 +10,15 @@ from evaluator import evaluate
 
 def main():
     environment = {}
+    debug_config = {"watch": None} # Initialize debug config
+    
+    # Parse command-line arguments for debug options
+    source_file = None
+    for arg in sys.argv[1:]:
+        if arg.startswith("watch="):
+            debug_config["watch"] = arg.split("=", 1)[1]
+        else:
+            source_file = arg
     
     # Check for command line arguments
     if len(sys.argv) > 1:
