@@ -160,7 +160,7 @@ def evaluate_builtin_function(function_name, args):
 
     assert False, f"Unknown builtin function '{function_name}'"
 
-def evaluate(ast, environment):
+def evaluate(ast, environment, debug_config=None):
     if ast["tag"] == "number":
         assert type(ast["value"]) in [
             float,
@@ -181,7 +181,7 @@ def evaluate(ast, environment):
     if ast["tag"] == "list":
         items = []
         for item in ast["items"]:
-            result, item_status = evaluate(item, environment)
+            result, item_status = evaluate(item, environment, debug_config)
             if item_status == "exit": # Propagate exit if an item evaluation causes it
                 return result, "exit"
             items.append(result)
@@ -189,28 +189,28 @@ def evaluate(ast, environment):
     if ast["tag"] == "object":
         object = {}
         for item in ast["items"]:
-            key, key_status = evaluate(item["key"], environment)
+            key, key_status = evaluate(item["key"], environment, debug_config)
             if key_status == "exit": return key, "exit"
             assert type(key) is str, "Object key must be a string"
-            value, value_status = evaluate(item["value"], environment)
+            value, value_status = evaluate(item["value"], environment, debug_config)
             if value_status == "exit": return value, "exit"
             object[key] = value
-        return object, None        
+        return object, None
 
     if ast["tag"] == "identifier":
         identifier = ast["value"]
         if identifier in environment:
             return environment[identifier], None
         if "$parent" in environment:
-            return evaluate(ast, environment["$parent"])
+            return evaluate(ast, environment["$parent"], debug_config)
         if identifier in __builtin_functions:
             return {"tag": "builtin", "name": identifier}, None
         raise Exception(f"Unknown identifier: '{identifier}'")
     
     if ast["tag"] == "+":
-        left_value, l_status = evaluate(ast["left"], environment)
+        left_value, l_status = evaluate(ast["left"], environment, debug_config)
         if l_status == "exit": return left_value, "exit"
-        right_value, r_status = evaluate(ast["right"], environment)
+        right_value, r_status = evaluate(ast["right"], environment, debug_config)
         if r_status == "exit": return right_value, "exit"
         types = type_of(left_value, right_value)
         if types == "number-number":
@@ -224,9 +224,9 @@ def evaluate(ast, environment):
             return copy.deepcopy(left_value) + copy.deepcopy(right_value), None
         raise Exception(f"Illegal types for {ast['tag']}: {types}")
     if ast["tag"] == "-":
-        left_value, l_status = evaluate(ast["left"], environment)
+        left_value, l_status = evaluate(ast["left"], environment, debug_config)
         if l_status == "exit": return left_value, "exit"
-        right_value, r_status = evaluate(ast["right"], environment)
+        right_value, r_status = evaluate(ast["right"], environment, debug_config)
         if r_status == "exit": return right_value, "exit"
         types = type_of(left_value, right_value)
         if types == "number-number":
@@ -234,9 +234,9 @@ def evaluate(ast, environment):
         raise Exception(f"Illegal types for {ast["tag"]}:{types}")
 
     if ast["tag"] == "*":
-        left_value, l_status = evaluate(ast["left"], environment)
+        left_value, l_status = evaluate(ast["left"], environment, debug_config)
         if l_status == "exit": return left_value, "exit"
-        right_value, r_status = evaluate(ast["right"], environment)
+        right_value, r_status = evaluate(ast["right"], environment, debug_config)
         if r_status == "exit": return right_value, "exit"
         types = type_of(left_value, right_value)
         if types == "number-number":
@@ -248,9 +248,9 @@ def evaluate(ast, environment):
         raise Exception(f"Illegal types for {ast['tag']}:{types}")
 
     if ast["tag"] == "/":
-        left_value, l_status = evaluate(ast["left"], environment)
+        left_value, l_status = evaluate(ast["left"], environment, debug_config)
         if l_status == "exit": return left_value, "exit"
-        right_value, r_status = evaluate(ast["right"], environment)
+        right_value, r_status = evaluate(ast["right"], environment, debug_config)
         if r_status == "exit": return right_value, "exit"
         types = type_of(left_value, right_value)
         if types == "number-number":
@@ -259,9 +259,9 @@ def evaluate(ast, environment):
         raise Exception(f"Illegal types for {ast['tag']}:{types}")
     
     if ast["tag"] == "%":
-        left_value, l_status = evaluate(ast["left"], environment)
+        left_value, l_status = evaluate(ast["left"], environment, debug_config)
         if l_status == "exit": return left_value, "exit"
-        right_value, r_status = evaluate(ast["right"], environment)
+        right_value, r_status = evaluate(ast["right"], environment, debug_config)
         if r_status == "exit": return right_value, "exit"
         types = type_of(left_value, right_value)
         if types == "number-number":
@@ -270,7 +270,7 @@ def evaluate(ast, environment):
         raise Exception(f"Illegal types for {ast['tag']}:{types}")
 
     if ast["tag"] == "negate":
-        value, status = evaluate(ast["value"], environment)
+        value, status = evaluate(ast["value"], environment, debug_config)
         if status == "exit": return value, "exit"
         types = type_of(value)
         if types == "number":
@@ -278,34 +278,34 @@ def evaluate(ast, environment):
         raise Exception(f"Illegal type for {ast['tag']}:{types}")
 
     if ast["tag"] in ["&&", "and"]:
-        left_value, l_status = evaluate(ast["left"], environment)
+        left_value, l_status = evaluate(ast["left"], environment, debug_config)
         if l_status == "exit": return left_value, "exit"
         # Short-circuit evaluation for 'and'
         if not is_truthy(left_value):
             return left_value, None # Or False, depending on desired semantics for 'and'
-        right_value, r_status = evaluate(ast["right"], environment)
+        right_value, r_status = evaluate(ast["right"], environment, debug_config)
         if r_status == "exit": return right_value, "exit"
         return is_truthy(left_value) and is_truthy(right_value), None
 
     if ast["tag"] in ["||", "or"]:
-        left_value, l_status = evaluate(ast["left"], environment)
+        left_value, l_status = evaluate(ast["left"], environment, debug_config)
         if l_status == "exit": return left_value, "exit"
         # Short-circuit evaluation for 'or'
         if is_truthy(left_value):
             return left_value, None # Or True, depending on desired semantics for 'or'
-        right_value, r_status = evaluate(ast["right"], environment)
+        right_value, r_status = evaluate(ast["right"], environment, debug_config)
         if r_status == "exit": return right_value, "exit"
         return is_truthy(left_value) or is_truthy(right_value), None
 
     if ast["tag"] in ["!", "not"]:
-        value, status = evaluate(ast["value"], environment)
+        value, status = evaluate(ast["value"], environment, debug_config)
         if status == "exit": return value, "exit"
         return not is_truthy(value), None
 
     if ast["tag"] in ["<", ">", "<=", ">="]:
-        left_value, l_status = evaluate(ast["left"], environment)
+        left_value, l_status = evaluate(ast["left"], environment, debug_config)
         if l_status == "exit": return left_value, "exit"
-        right_value, r_status = evaluate(ast["right"], environment)
+        right_value, r_status = evaluate(ast["right"], environment, debug_config)
         if r_status == "exit": return right_value, "exit"
         types = type_of(left_value, right_value)
         if types not in ["number-number", "string-string"]:
@@ -320,22 +320,22 @@ def evaluate(ast, environment):
             return left_value >= right_value, None
 
     if ast["tag"] == "==":
-        left_value, l_status = evaluate(ast["left"], environment)
+        left_value, l_status = evaluate(ast["left"], environment, debug_config)
         if l_status == "exit": return left_value, "exit"
-        right_value, r_status = evaluate(ast["right"], environment)
+        right_value, r_status = evaluate(ast["right"], environment, debug_config)
         if r_status == "exit": return right_value, "exit"
         return left_value == right_value, None
     
     if ast["tag"] == "!=":
-        left_value, l_status = evaluate(ast["left"], environment)
+        left_value, l_status = evaluate(ast["left"], environment, debug_config)
         if l_status == "exit": return left_value, "exit"
-        right_value, r_status = evaluate(ast["right"], environment)
+        right_value, r_status = evaluate(ast["right"], environment, debug_config)
         if r_status == "exit": return right_value, "exit"
         return left_value != right_value, None
 
     if ast["tag"] == "print":
         if ast["value"]:
-            value, status = evaluate(ast["value"], environment)
+            value, status = evaluate(ast["value"], environment, debug_config)
             if status == "exit": return value, "exit"
             if type(value) is bool:
                 if value == True:
@@ -350,39 +350,39 @@ def evaluate(ast, environment):
 
     if ast["tag"] == "assert":
         if ast["condition"]:
-            condition_value, cond_status = evaluate(ast["condition"], environment)
+            condition_value, cond_status = evaluate(ast["condition"], environment, debug_config)
             if cond_status == "exit": return condition_value, "exit"
             if not is_truthy(condition_value):
                 error_msg = f"Assertion failed: {ast_to_string(ast['condition'])}"
                 if "explanation" in ast and ast["explanation"]:
-                    explanation_val, expl_status = evaluate(ast["explanation"], environment)
+                    explanation_val, expl_status = evaluate(ast["explanation"], environment, debug_config)
                     if expl_status == "exit": return explanation_val, "exit"
                     error_msg += f" ({explanation_val})"
                 raise Exception(error_msg)
         return None, None # Assert statement itself doesn't produce a value
 
     if ast["tag"] == "if":
-        condition_value, cond_status = evaluate(ast["condition"], environment)
+        condition_value, cond_status = evaluate(ast["condition"], environment, debug_config)
         if cond_status == "exit": return condition_value, "exit"
 
         if is_truthy(condition_value):
-            val, status = evaluate(ast["then"], environment)
+            val, status = evaluate(ast["then"], environment, debug_config)
             if status: # Propagate "return", "exit", "break", "continue"
                 return val, status
         else:
             if "else" in ast:
-                val, status = evaluate(ast["else"], environment)
+                val, status = evaluate(ast["else"], environment, debug_config)
                 if status: # Propagate "return", "exit", "break", "continue"
                     return val, status
         return None, None # Normal completion of if/else
 
     if ast["tag"] == "while":
         # Condition is evaluated in the current environment
-        condition_value, cond_status = evaluate(ast["condition"], environment)
+        condition_value, cond_status = evaluate(ast["condition"], environment, debug_config)
         if cond_status == "exit": return condition_value, "exit"
 
         while is_truthy(condition_value):
-            val, body_status = evaluate(ast["do"], environment)
+            val, body_status = evaluate(ast["do"], environment, debug_config)
 
             if body_status == "return" or body_status == "exit":
                 return val, body_status # Propagate critical exits
@@ -390,19 +390,19 @@ def evaluate(ast, environment):
                 break # Exit the while loop, loop completes normally
             if body_status == "continue":
                 # Re-evaluate condition and continue to next iteration
-                condition_value, cond_status = evaluate(ast["condition"], environment)
+                condition_value, cond_status = evaluate(ast["condition"], environment, debug_config)
                 if cond_status == "exit": return condition_value, "exit"
                 continue # Continue to next iteration of while
             
             # If body completed normally (status is None), re-evaluate condition
-            condition_value, cond_status = evaluate(ast["condition"], environment)
+            condition_value, cond_status = evaluate(ast["condition"], environment, debug_config)
             if cond_status == "exit": return condition_value, "exit"
         return None, None # Normal loop termination (condition false or break occurred)
 
     if ast["tag"] == "statement_list":
         last_value = None
         for statement in ast["statements"]:
-            last_value, status = evaluate(statement, environment)
+            last_value, status = evaluate(statement, environment, debug_config)
             if status: # "return", "exit", "break", "continue"
                 return last_value, status
         return last_value, None # All statements completed normally
@@ -410,7 +410,7 @@ def evaluate(ast, environment):
     if ast["tag"] == "program":
         last_value = None
         for statement in ast["statements"]:
-            val, status = evaluate(statement, environment)
+            val, status = evaluate(statement, environment, debug_config)
             if status:
                 if status == "return":
                     raise Exception("'return' statement outside of function.")
@@ -429,11 +429,11 @@ def evaluate(ast, environment):
         }, None # Function definition itself is a normal evaluation
 
     if ast["tag"] == "call":
-        function, func_status = evaluate(ast["function"], environment)
+        function, func_status = evaluate(ast["function"], environment, debug_config)
         if func_status == "exit": return function, "exit"
         argument_values = []
         for arg in ast["arguments"]:
-            arg_val, arg_status = evaluate(arg, environment)
+            arg_val, arg_status = evaluate(arg, environment, debug_config)
             if arg_status == "exit": return arg_val, "exit"
             argument_values.append(arg_val)
         if function.get("tag") == "builtin":
@@ -445,7 +445,7 @@ def evaluate(ast, environment):
             for name, val in zip(function["parameters"], argument_values)
         }
         local_environment["$parent"] = function["environment"]
-        val, status = evaluate(function["body"], local_environment)
+        val, status = evaluate(function["body"], local_environment, debug_config)
 
         if status == "return":
             return val, None # Consume "return" status, call evaluates to the value
@@ -457,9 +457,9 @@ def evaluate(ast, environment):
             return None, None
 
     if ast["tag"] == "complex":
-        base, base_status = evaluate(ast["base"], environment)
+        base, base_status = evaluate(ast["base"], environment, debug_config)
         if base_status == "exit": return base, "exit"
-        index, index_status = evaluate(ast["index"], environment)
+        index, index_status = evaluate(ast["index"], environment, debug_config)
         if index_status == "exit": return index, "exit"
 
         if index is None: # index evaluated to null
@@ -495,14 +495,14 @@ def evaluate(ast, environment):
             target_index = name
 
         elif target["tag"] == "complex":
-            base, base_status = evaluate(target["base"], environment)
+            base, base_status = evaluate(target["base"], environment, debug_config)
             if base_status == "exit": return base, "exit"
             index_ast = target["index"]
 
             if index_ast["tag"] == "string":
                 index = index_ast["value"]
             else:
-                index, index_status = evaluate(index_ast, environment)
+                index, index_status = evaluate(index_ast, environment, debug_config)
                 if index_status == "exit": return index, "exit"
 
             if index is None: raise Exception("Cannot use 'null' as index for assignment.")
@@ -519,15 +519,24 @@ def evaluate(ast, environment):
             else:
                 assert False, f"Cannot assign to base of type {type(base)}"
 
-        value, value_status = evaluate(ast["value"], environment)
+        value, value_status = evaluate(ast["value"], environment, debug_config)
         if value_status == "exit": return value, "exit"
 
         target_base[target_index] = value
+        
+        # Debug: Watch notification
+        if debug_config and debug_config.get("watch"):
+            watch_var = debug_config["watch"]
+            # For simple identifier assignment
+            if target["tag"] == "identifier" and target_index == watch_var:
+                pos = ast.get("position", "unknown")
+                print(f"[Watch] {watch_var} = {value} (position: {pos})")
+        
         return value, None
 
     if ast["tag"] == "return":
         if "value" in ast and ast["value"] is not None: # Checks if 'return' has an expression
-            evaluated_value, expression_status = evaluate(ast["value"], environment)
+            evaluated_value, expression_status = evaluate(ast["value"], environment, debug_config)
             if expression_status == "exit": # If the expression itself caused an exit
                 return evaluated_value, "exit" # Propagate the exit status and its value
             # Otherwise, the expression evaluated normally or had another status.
@@ -538,7 +547,7 @@ def evaluate(ast, environment):
     if ast["tag"] == "exit":
         exit_code = 0 # Default exit code
         if "value" in ast and ast["value"] is not None:
-            exit_code_val, status = evaluate(ast["value"], environment)
+            exit_code_val, status = evaluate(ast["value"], environment, debug_config)
             if status == "exit": return exit_code_val, "exit" # if expr itself exits
             assert isinstance(exit_code_val, int), "Exit code must be an integer."
             return exit_code_val, "exit"
@@ -551,7 +560,7 @@ def evaluate(ast, environment):
         return None, "continue"
 
     if ast["tag"] == "import":
-        filename_val, status = evaluate(ast["value"], environment)
+        filename_val, status = evaluate(ast["value"], environment, debug_config)
         if status == "exit": return filename_val, "exit"
         assert isinstance(filename_val, str), "Import path must be a string."
         # Basic import logic (can be expanded for caching, namespaces, etc.)
@@ -561,7 +570,7 @@ def evaluate(ast, environment):
             imported_tokens = tokenize(source_code)
             imported_ast = parse(imported_tokens)
             # Evaluate in the current environment.
-            return evaluate(imported_ast, environment) # Propagates value and status from imported code
+            return evaluate(imported_ast, environment, debug_config) # Propagates value and status from imported code
         except FileNotFoundError:
             raise Exception(f"ImportError: File not found '{filename_val}'")
         except Exception as e:
