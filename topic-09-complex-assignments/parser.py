@@ -821,6 +821,7 @@ def parse_assignment_expression(tokens):
     left, tokens = parse_logical_expression(tokens)
 
     if tokens[0]["tag"] == "=":
+        assignment_position = tokens[0].get("position", "unknown")  # Capture position
         tokens = tokens[1:]
         right, tokens = parse_assignment_expression(tokens)
 
@@ -830,7 +831,7 @@ def parse_assignment_expression(tokens):
                 raise SyntaxError("extern can only be used with simple identifiers")
             left["extern"] = True
 
-        return {"tag": "assign", "target": left, "value": right}, tokens
+        return {"tag": "assign", "target": left, "value": right, "position": assignment_position}, tokens
 
     # if no assignment occurred, extern must not be present
     assert not extern, "Can't use extern without assignment."
@@ -853,6 +854,7 @@ def test_parse_assignment_expression():
         "tag": "assign",
         "target": {"tag": "identifier", "value": "x"},
         "value": {"tag": "number", "value": 3},
+        "position": 2,
     }
 
     # Nested assignment
@@ -864,7 +866,9 @@ def test_parse_assignment_expression():
             "tag": "assign",
             "target": {"tag": "identifier", "value": "y"},
             "value": {"tag": "number", "value": 4},
+            "position": 6,
         },
+        "position": 2,
     }
 
     # Assignment with expression on RHS
@@ -877,6 +881,7 @@ def test_parse_assignment_expression():
             "left": {"tag": "identifier", "value": "y"},
             "right": {"tag": "number", "value": 1},
         },
+        "position": 2,
     }
 
     # extern assignment (valid)
@@ -889,6 +894,7 @@ def test_parse_assignment_expression():
             "left": {"tag": "identifier", "value": "y"},
             "right": {"tag": "number", "value": 1},
         },
+        "position": 9,
     }
 
     # extern without assignment (invalid)
