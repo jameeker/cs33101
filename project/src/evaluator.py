@@ -134,7 +134,7 @@ def ast_to_string(ast):
     assert False, f"Unknown tag [{ast['tag']}] in AST"
 
 __builtin_functions = [
-    "head","tail","length","keys", "input", "push"
+    "head","tail","length","keys", "input", "push", "pop"
 ]
 
 def evaluate_builtin_function(function_name, args):
@@ -162,6 +162,11 @@ def evaluate_builtin_function(function_name, args):
         assert len(args) == 2 and isinstance(args[0], list), "push() requires a list and a value"
         args[0].append(args[1])
         return args[0], None
+    
+    if function_name == "pop":
+        assert len(args) == 1 and isinstance(args[0], list), "pop() requires a single list argument"
+        assert len(args[0]) > 0, "pop() requires a non-empty list"
+        return args[0].pop(), None
 
     assert False, f"Unknown builtin function '{function_name}'"
 
