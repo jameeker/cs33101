@@ -134,7 +134,7 @@ def ast_to_string(ast):
     assert False, f"Unknown tag [{ast['tag']}] in AST"
 
 __builtin_functions = [
-    "head","tail","length","keys", "input"
+    "head","tail","length","keys", "input", "push"
 ]
 
 def evaluate_builtin_function(function_name, args):
@@ -157,6 +157,11 @@ def evaluate_builtin_function(function_name, args):
     if function_name == "input":
         assert len(args) == 0, "input() requires no arguments"
         return input(), None # Uses Python's built-in input()
+    
+    if function_name == "push":
+        assert len(args) == 2 and isinstance(args[0], list), "push() requires a list and a value"
+        args[0].append(args[1])
+        return args[0], None
 
     assert False, f"Unknown builtin function '{function_name}'"
 
