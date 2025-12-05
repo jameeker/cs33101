@@ -524,10 +524,8 @@ def evaluate(ast, environment, debug_config=None):
 
         target_base[target_index] = value
         
-        # Debug: Watch notification
         if debug_config and debug_config.get("watch"):
             watch_var = debug_config["watch"]
-            # For simple identifier assignment
             if target["tag"] == "identifier" and target_index == watch_var:
                 pos = ast.get("position", "unknown")
                 print(f"[Watch] {watch_var} = {value} (position: {pos})")
